@@ -995,6 +995,7 @@ window.resaltarJugador = function (nombre) {
 };
 
 window.limpiarFiltros = function () {
+  if (!equiposSeleccionados()) return faltanEquipos();
   ESTADO.posicion = "todas";
   ESTADO.vista = "ambos";
   ESTADO.orden = null;
