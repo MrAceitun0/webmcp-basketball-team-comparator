@@ -508,11 +508,11 @@ $("#form-equipos").addEventListener("submit", (e) => {
   e.preventDefault();
   const a = $("#sel-equipo-a").value;
   const b = $("#sel-equipo-b").value;
-  if (!a || !b) {
-    $("#error-equipos").textContent = "Selecciona los dos equipos.";
-    return;
-  }
-  window.seleccionarEquipos(a, b);
+  const resultado = !a || !b
+    ? { ok: false, mensaje: "Selecciona los dos equipos." }
+    : window.seleccionarEquipos(a, b);
+  if (!resultado.ok) $("#error-equipos").textContent = resultado.mensaje;
+  if (e.agentInvoked) e.respondWith(Promise.resolve(resultado));
 });
 
 $("#form-filtros").addEventListener("submit", (e) => e.preventDefault());

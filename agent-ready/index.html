@@ -23,13 +23,23 @@
 
   <section class="tarjeta" aria-labelledby="titulo-equipos">
     <h2 id="titulo-equipos">1. Elige los dos equipos a comparar</h2>
-    <form id="form-equipos">
+    <form id="form-equipos" 
+      toolname="seleccionar-equipos"
+      tooldescription="Selecciona dos equipos para comparar sus estadisticas"
+      toolautosubmit="true"
+      >
       <label>Equipo A (nosotros / local)
-        <select id="sel-equipo-a" name="equipoA" required></select>
+        <select id="sel-equipo-a" 
+          name="equipoA" 
+          required
+          toolparamdescription="Equipo local para comparar"
+        ></select>
       </label>
       <span class="vs" aria-hidden="true">VS</span>
       <label>Equipo B (rival)
-        <select id="sel-equipo-b" name="equipoB" required></select>
+        <select id="sel-equipo-b" name="equipoB" required
+          toolparamdescription="Equipo visitante para comparar"
+        ></select>
       </label>
       <button type="submit" class="primario">Comparar</button>
     </form>
