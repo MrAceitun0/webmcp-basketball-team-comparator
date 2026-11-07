@@ -131,15 +131,18 @@ button:hover { filter: brightness(.95); }
 .jugador-mini span { color: var(--suave); }
 .jugador-mini.vacio { color: var(--suave); font-style: italic; }
 
-#form-filtros {
+#filtros {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: end;
 }
 fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
-legend, #form-filtros label > span { font-weight: 600; font-size: .85rem; padding: 0; }
-#form-filtros label { display: grid; gap: 4px; }
+legend, #filtros label > span { font-weight: 600; font-size: .85rem; padding: 0; }
+#filtros label { display: grid; gap: 4px; }
+#form-orden { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+form:tool-form-active { outline: 2px dashed var(--a); outline-offset: 6px; border-radius: 4px; }
+button:tool-submit-active { box-shadow: 0 0 0 3px var(--resaltado); }
 .segmentado { display: flex; flex-wrap: wrap; gap: 4px; }
 .segmentado button[aria-pressed="true"] { background: var(--cabecera); color: #fff; border-color: var(--cabecera); }
 

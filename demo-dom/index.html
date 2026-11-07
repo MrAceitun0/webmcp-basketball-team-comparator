@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Así lee el DOM un agente para reservar mesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --surface2:#e3eae6; --text:#14201c; --muted:#5b6b64; --line:#cbd6d1;
+  --green:#1f5d4a; --green-soft:#d3e8df; --brass:#9a6b12; --brass-soft:#f3e3bd;
+  --ok:#237a4b; --ok-soft:#d6efe1; --tag:#1f5d4a; --label:#8a5a0b; --ref:#5b6b64;
+  --shadow:0 1px 0 rgba(20,32,28,.06);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1614; --surface:#15201d; --surface2:#1c2b27; --text:#e5ede9; --muted:#8fa39a; --line:#2a3b36;
+    --green:#5dc09a; --green-soft:#1d3a30; --brass:#e0aa48; --brass-soft:#3a2f14;
+    --ok:#5dc99a; --ok-soft:#173a2a; --tag:#5dc09a; --label:#e0aa48; --ref:#8fa39a;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1614; --surface:#15201d; --surface2:#1c2b27; --text:#e5ede9; --muted:#8fa39a; --line:#2a3b36;
+  --green:#5dc09a; --green-soft:#1d3a30; --brass:#e0aa48; --brass-soft:#3a2f14;
+  --ok:#5dc99a; --ok-soft:#173a2a; --tag:#5dc09a; --label:#e0aa48; --ref:#8fa39a;
+  --shadow:none; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 "Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 28px}
+h1{font:600 clamp(22px,3.2vw,32px)/1.15 "Fraunces",Georgia,"Times New Roman",serif;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.step{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted);background:transparent;cursor:pointer;font-family:inherit}
+.step.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+:root[data-theme="dark"] .step.on{color:#0e1614}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .step.on{color:#0e1614}}
+.step.done{color:var(--text);border-color:var(--green)}
+.caption{min-height:44px;margin:0 0 12px;font-size:15px}
+.caption b{font-weight:600}
+.stage{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px;height:560px}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow)}
+.ptitle{font-weight:600;font-size:14px;margin-bottom:8px;color:var(--text)}
+.prompt{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45;margin-bottom:8px}
+.prompt b{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.chip{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:12px;background:var(--surface);transition:background .3s,border-color .3s}
+.chip i{font-style:normal;color:var(--muted);margin-right:5px}
+.chip.used{background:var(--green-soft);border-color:var(--green)}
+.log{flex:1;min-height:0;overflow:auto;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.ll{display:flex;gap:8px;margin-bottom:6px}
+.ll>span{flex:none;font:400 11px/1.9 "JetBrains Mono",ui-monospace,monospace;color:var(--muted);width:34px}
+.ll.dim{color:var(--muted)}
+code{font:500 12px "JetBrains Mono",ui-monospace,Menlo,monospace;background:var(--surface2);border-radius:4px;padding:1px 4px}
+.bubble{background:var(--ok-soft);border:1px solid var(--ok);border-radius:8px;padding:8px 10px;margin-top:6px}
+.tree{flex:1;min-height:0;overflow:auto;font:400 12.5px/1.35 "JetBrains Mono",ui-monospace,Menlo,monospace}
+.ln{padding:3px 6px;border-radius:5px;border-left:3px solid transparent;white-space:nowrap;margin-bottom:1px}
+.ln .tg{color:var(--tag)}
+.ln .lb{color:var(--label)}
+.ln .rf{color:var(--ref);margin-left:6px}
+.ln .bd{margin-left:8px;background:var(--green-soft);border-radius:4px;padding:0 5px;color:var(--text)}
+.ln.act{background:var(--brass-soft);border-left-color:var(--brass)}
+.ln.ign{opacity:.45;text-decoration:line-through}
+.ln.in{animation:in .35s ease-out}
+@keyframes in{from{background:var(--green-soft)}to{background:transparent}}
+.nt{font:400 12px/1.4 "Instrument Sans",system-ui,sans-serif;color:var(--text);background:var(--brass-soft);border-radius:5px;padding:4px 8px;margin:2px 0 5px;white-space:normal}
+.browser{flex:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.url{background:var(--surface2);font:400 12px "JetBrains Mono",ui-monospace,monospace;padding:6px 10px;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewport{flex:1;position:relative;overflow:auto;padding:14px;background:#faf8f3;color:#2a2116}
+.blank{height:100%;display:grid;place-items:center;color:#8a8070;font-size:13px}
+.bistro{font:600 20px/1.1 "Fraunces",Georgia,serif;margin:0}
+.bsub{font-size:12px;color:#7a6e5c;margin:2px 0 10px}
+.fld{margin-bottom:8px}
+.fld label{display:flex;justify-content:space-between;font-size:11.5px;color:#5a4e3c;margin-bottom:2px}
+.fld .ok{color:#237a4b;font-weight:600}
+.box{border:1px solid #cdc4b2;background:#fff;border-radius:5px;padding:5px 8px;font-size:13px;min-height:29px;transition:border-color .2s,box-shadow .2s;color:#2a2116}
+.box.ph{color:#9c917e}
+.box.act{border-color:#9a6b12;box-shadow:0 0 0 3px rgba(154,107,18,.25)}
+.box.good{border-color:#237a4b}
+.box.ta{min-height:46px}
+.caret{display:inline-block;width:1px;height:14px;background:#2a2116;vertical-align:-2px;margin-left:1px;animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.btn{margin-top:6px;background:#1f5d4a;color:#fff;border-radius:5px;padding:7px 10px;text-align:center;font-size:13px;font-weight:600;transition:transform .15s,background .15s}
+.btn.press{transform:scale(.97);background:#b5832a;outline:3px solid rgba(154,107,18,.35)}
+.chat{position:absolute;right:10px;bottom:10px;width:30px;height:30px;border-radius:50%;background:#1f5d4a;display:grid;place-items:center;font-size:14px;opacity:.35}
+.modal{position:absolute;inset:0;background:rgba(20,15,8,.55);display:grid;place-items:center;animation:fade .3s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.dlg{background:#fff;border-radius:8px;padding:16px 18px;text-align:center;max-width:220px}
+.dlg h3{margin:0 0 4px;font:600 16px "Fraunces",Georgia,serif;color:#1f5d4a}
+.dlg p{margin:0 0 10px;font-size:13px}
+.dlg .c{display:inline-block;background:#e8e2d3;border-radius:5px;padding:4px 10px;font-size:12px}
+.controls{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.controls button,.controls select{font:inherit;font-size:14px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.controls button.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600;min-width:132px}
+:root[data-theme="dark"] .controls button.primary{color:#0e1614}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .controls button.primary{color:#0e1614}}
+.controls input[type=range]{flex:1;min-width:140px;accent-color:var(--green)}
+.time{font:400 12px "JetBrains Mono",ui-monospace,monospace;color:var(--muted);min-width:70px;text-align:right}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.foot{color:var(--muted);font-size:12.5px;margin-top:14px;max-width:80ch}
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr;height:auto}
+  .pane{height:420px}
+}
+@media (prefers-reduced-motion: reduce){.ln.in,.caret,.modal{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Así lee el DOM un agente para reservar mesa</h1>
+  <p class="sub">Le Petit Bistro, un formulario de reservas. El agente no «mira» la página: recibe su estructura, empareja tus datos con cada campo y actúa sobre ellos uno a uno.</p>
+  <div class="steps" id="steps"></div>
+  <p class="caption" id="caption"></p>
+  <div class="stage">
+    <section class="pane" id="pAgent" aria-label="Agente"></section>
+    <section class="pane" id="pDom" aria-label="Árbol DOM"></section>
+    <section class="pane" id="pPage" aria-label="Página"></section>
+  </div>
+  <div class="controls">
+    <button class="primary" id="play" type="button">Pausa</button>
+    <input id="scrub" type="range" min="0" max="5600" value="0" aria-label="Posición del vídeo">
+    <span class="time" id="time">0:00 / 0:56</span>
+    <select id="speed" aria-label="Velocidad">
+      <option value="1">1×</option>
+      <option value="1.5">1,5×</option>
+      <option value="2">2×</option>
+      <option value="0.5">0,5×</option>
+    </select>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var DUR = 56;
+var PROMPT = "Haz una reserva en http://127.0.0.1:8080/french-bistro/ para 3 personas a las 21:00 en la terraza a nombre de Sergi Pons con el tlf +34666666666, mi pareja tiene alergia a los cacahuetes para mañana";
+
+var SCENES = [
+  {t:0,  n:"Entender la petición", d:"El modelo convierte el texto libre en <b>datos estructurados</b>: qué, cuándo, quién y con qué condiciones."},
+  {t:7,  n:"Leer el DOM", d:"En lugar de píxeles, el agente recibe el <b>árbol de accesibilidad</b>: roles, etiquetas y una referencia por nodo."},
+  {t:15, n:"Emparejar datos y campos", d:"Cada dato se asocia con el campo cuya <b>etiqueta y tipo</b> encajan. Aquí es donde hace falta interpretar."},
+  {t:23, n:"Rellenar", d:"Una acción por campo, dirigida a la referencia del nodo. Escribe en los de texto y elige opción en los desplegables."},
+  {t:44, n:"Validar y enviar", d:"Si no aparece ningún mensaje de error, pulsa el botón de envío."},
+  {t:48, n:"Confirmar y responder", d:"Lee el diálogo de éxito para saber que funcionó y te lo cuenta."}
+];
+
+var ENT = [
+  {k:"URL", v:"127.0.0.1:8080/french-bistro/"},
+  {k:"Nombre", v:"Sergi Pons"},
+  {k:"Teléfono", v:"+34666666666"},
+  {k:"Fecha", v:"«mañana» → 2026-11-07"},
+  {k:"Hora", v:"21:00"},
+  {k:"Personas", v:"3"},
+  {k:"Zona", v:"Terraza"},
+  {k:"Alergia", v:"cacahuetes"}
+];
+
+var FIELDS = [
+  {ref:"ref_2", tag:"input type=text",  label:"Full Name",          val:"Sergi Pons",    show:"Sergi Pons",         kind:"text",   ph:"",
+   note:"Texto libre. «a nombre de» apunta aquí.", act:"type"},
+  {ref:"ref_3", tag:"input type=tel",   label:"Phone Number",       val:"+34666666666",  show:"+34666666666",       kind:"text",   ph:"",
+   note:"El mensaje de ayuda pide 10 dígitos como mínimo; este número cumple.", act:"type"},
+  {ref:"ref_4", tag:"input type=date",  label:"Date",               val:"2026-11-07",    show:"2026-11-07",         kind:"text",   ph:"dd/mm/aaaa",
+   note:"«Mañana» no sirve tal cual: hoy es 06/11/2026, así que se convierte en 2026-11-07, el formato que exige type=date.", act:"type"},
+  {ref:"ref_5", tag:"input type=time",  label:"Time",               val:"21:00",         show:"21:00",              kind:"text",   ph:"--:--",
+   note:"Hora en formato de 24 h.", act:"type"},
+  {ref:"ref_6", tag:"select",           label:"Guests",             val:"3 People",      show:"3 People",           kind:"select", ph:"2 People",
+   note:"«3 personas» se traduce a la opción en inglés «3 People».", act:"select"},
+  {ref:"ref_7", tag:"select",           label:"Seating Preference", val:"Terrace (Outdoor)", show:"Terrace (Outdoor)", kind:"select", ph:"Main Dining Room",
+   note:"«Terraza» se empareja por significado con «Terrace (Outdoor)».", act:"select"},
+  {ref:"ref_8", tag:"textarea",         label:"Special Requests",   val:"Mi pareja tiene alergia a los cacahuetes", show:"alergia: cacahuetes", kind:"text", ph:"", ta:true,
+   note:"La alergia no tiene campo propio. Lo más razonable es dejarla en las peticiones especiales.", act:"type"}
+];
+
+var DOM = [
+  {d:0, tag:"body"},
+  {d:1, tag:"main"},
+  {d:2, tag:"h1", label:"Le Petit Bistro"},
+  {d:2, tag:"form", label:"Table Reservations"},
+  {d:3, f:0},{d:3, f:1},{d:3, f:2},{d:3, f:3},{d:3, f:4},{d:3, f:5},{d:3, f:6},
+  {d:3, tag:"button", label:"Request Reservation", ref:"ref_9", btn:true},
+  {d:2, tag:"dialog", label:"Reservation Received", extra:"oculto"},
+  {d:1, tag:"aside", label:"Bistro Assistant (chat)", ign:true}
+];
+
+/* tiempos */
+var T_ENT=1.2, G_ENT=0.7;
+var T_DOM=8.0, G_DOM=0.45;
+var T_MAP=15.5, G_MAP=0.9;
+var T_FILL=23, G_FILL=3;
+var T_VAL=44, T_CLICK=46.5, T_DLG=48.4, T_END=51;
+
+var LOG = [
+  [0.4, "Recibo la instrucción y primero la <b>estructuro</b>."],
+  [6.3, "Tengo la URL y 7 datos. Falta saber dónde va cada uno."],
+  [7.2, "<code>navigate</code> a la URL indicada."],
+  [8.1, "<code>read_page</code>: recibo el árbol de accesibilidad, no una captura."],
+  [13.6, "Ignoro el widget de chat: no tiene nada que ver con la reserva.", "dim"],
+  [14.4, "Encuentro 1 <code>form</code>, 7 campos y 1 botón de envío."],
+  [15.4, "Emparejo cada dato con la <b>etiqueta y el tipo</b> del campo."],
+  [17.4, "«Mañana» depende de la fecha de hoy: 06/11/2026 + 1 día."],
+  [19.2, "«3 personas» → opción «3 People» del desplegable."],
+  [20.1, "«Terraza» → «Terrace (Outdoor)»."],
+  [21.0, "La alergia no tiene campo: va a <code>Special Requests</code>."],
+  [21.8, "Plan listo: 7 acciones y 1 clic."],
+  [44.2, "Reviso que no haya errores de validación visibles."],
+  [45.6, "Todos los campos aceptados."],
+  [46.6, "<code>click</code>(ref_9) en «Request Reservation»."],
+  [48.5, "Aparece el diálogo «Reservation Received»: éxito."],
+  [50.2, "Preparo la respuesta para el usuario."]
+];
+FIELDS.forEach(function(f,i){
+  var t = T_FILL + i*G_FILL + 0.15;
+  var v = f.val.length>26 ? f.val.slice(0,26)+"…" : f.val;
+  LOG.push([t, "<code>"+(f.act==="select"?"form_input":"type")+"</code>("+f.ref+", «"+esc(v)+"»)"]);
+});
+LOG.sort(function(a,b){return a[0]-b[0]});
+
+var FINAL_MSG = "Hecho. He solicitado la reserva en Le Petit Bistro: 3 personas, mañana (07/11/2026) a las 21:00, en la terraza, a nombre de Sergi Pons (+34666666666). He anotado en las peticiones especiales la alergia a los cacahuetes de tu pareja.";
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function fmt(t){var s=Math.floor(t);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+
+/* estado derivado del tiempo: permite avanzar y retroceder */
+function stateAt(t){
+  var S = {};
+  S.ents = clamp(Math.floor((t-T_ENT)/G_ENT)+1,0,ENT.length);
+  S.urlUsed = t>=7.2;
+  S.dom = clamp(Math.floor((t-T_DOM)/G_DOM)+1,0,DOM.length);
+  S.map = clamp(Math.floor((t-T_MAP)/G_MAP)+1,0,7);
+  var fi = t<T_FILL ? -1 : Math.min(6,Math.floor((t-T_FILL)/G_FILL));
+  S.active = -1;
+  if(t>=T_MAP && t<T_FILL) S.active = S.map-1;
+  else if(t>=T_FILL && t<T_VAL) S.active = fi;
+  S.pageUrl = t<7.2 ? 0 : (t<7.6 ? 1 : 2);
+  S.vals = [];
+  for(var i=0;i<7;i++){
+    var f = FIELDS[i], v = f.ph, ph = true, caret = false;
+    if(t>=T_VAL || (fi>i)){ v=f.val; ph=false; }
+    else if(fi===i){
+      var p = (t-T_FILL-i*G_FILL)/G_FILL;
+      if(f.kind==="select"){ if(p>0.45){ v=f.val; ph=false; } }
+      else {
+        var n = Math.floor(clamp(p/0.6,0,1)*f.val.length);
+        if(n>0){ v=f.val.slice(0,n); ph=false; }
+        caret = p<0.62;
+      }
+    }
+    S.vals.push([v,ph,caret?1:0]);
+  }
+  S.validate = t>=T_VAL;
+  S.press = t>=T_CLICK && t<T_DLG;
+  S.activeBtn = t>=T_CLICK && t<T_END;
+  S.dialog = t>=T_DLG;
+  S.final = t>=T_END;
+  S.logN = LOG.filter(function(l){return l[0]<=t}).length;
+  var sc=0; SCENES.forEach(function(s,i){ if(t>=s.t) sc=i; });
+  S.scene = sc;
+  return S;
+}
+
+var elAgent=document.getElementById("pAgent"),
+    elDom=document.getElementById("pDom"),
+    elPage=document.getElementById("pPage"),
+    elCap=document.getElementById("caption"),
+    elSteps=document.getElementById("steps");
+
+SCENES.forEach(function(s,i){
+  var b=document.createElement("button");
+  b.type="button"; b.className="step"; b.id="st"+i; b.textContent=(i+1)+". "+s.n;
+  b.addEventListener("click",function(){ t=s.t+0.01; playing=false; updBtn(); draw(true); });
+  elSteps.appendChild(b);
+});
+
+function renderAgent(S,t){
+  var h = '<div class="ptitle">Agente</div>';
+  h += '<div class="prompt"><b>Tu instrucción</b>'+esc(PROMPT)+'</div>';
+  if(S.ents){
+    h += '<div class="chips">';
+    for(var i=0;i<S.ents;i++){
+      var used = i===0 ? S.urlUsed : S.map>=i;
+      h += '<span class="chip'+(used?' used':'')+'"><i>'+ENT[i].k+'</i>'+esc(ENT[i].v)+'</span>';
+    }
+    h += '</div>';
+  }
+  h += '<div class="log" id="log">';
+  for(var j=0;j<S.logN;j++){
+    var l=LOG[j];
+    h += '<div class="ll'+(l[2]?' '+l[2]:'')+'"><span>'+fmt(l[0])+'</span><div>'+l[1]+'</div></div>';
+  }
+  if(S.final) h += '<div class="bubble">'+esc(FINAL_MSG)+'</div>';
+  h += '</div>';
+  elAgent.innerHTML = h;
+  var lg=document.getElementById("log"); if(lg) lg.scrollTop=lg.scrollHeight;
+}
+
+function renderDom(S,t){
+  var h = '<div class="ptitle">Árbol DOM que recibe el agente</div><div class="tree" id="tree">';
+  for(var i=0;i<S.dom;i++){
+    var n=DOM[i], cls="ln", pad=n.d*14, inner="", note="";
+    if(i===S.dom-1 && t<15) cls+=" in";
+    if(n.f!==undefined){
+      var f=FIELDS[n.f];
+      if(S.active===n.f) cls+=" act";
+      inner = '<span class="tg">&lt;'+esc(f.tag)+'&gt;</span> <span class="lb">«'+esc(f.label)+'»</span><span class="rf">'+f.ref+'</span>';
+      if(n.f<S.map) inner += '<span class="bd">← '+esc(f.show)+'</span>';
+      if(S.active===n.f) note = '<div class="nt" style="margin-left:'+pad+'px">'+esc(f.note)+'</div>';
+    } else {
+      if(n.ign) cls+=" ign";
+      if(n.btn && S.activeBtn) cls+=" act";
+      inner = '<span class="tg">&lt;'+esc(n.tag)+'&gt;</span>';
+      if(n.label) inner += ' <span class="lb">«'+esc(n.label)+'»</span>';
+      if(n.ref) inner += '<span class="rf">'+n.ref+'</span>';
+      if(n.extra) inner += '<span class="rf">['+esc(n.extra)+']</span>';
+      if(n.ign) inner += '<span class="rf" style="text-decoration:none;display:inline-block">ignorado</span>';
+    }
+    h += '<div class="'+cls+'" style="padding-left:'+(pad+6)+'px">'+inner+'</div>'+note;
+  }
+  h += '</div>';
+  var prev = document.getElementById("tree");
+  var keep = prev ? prev.scrollTop : 0;
+  elDom.innerHTML = h;
+  var tr=document.getElementById("tree");
+  var act = tr.querySelector(".act");
+  if(act && S.active>=0){ tr.scrollTop = Math.max(0, act.offsetTop - tr.clientHeight/2); }
+  else if(S.dom<DOM.length || S.final===false){ tr.scrollTop = keep; }
+}
+
+function renderPage(S,t){
+  var urlTxt = S.pageUrl===0 ? "about:blank" : "127.0.0.1:8080/french-bistro/";
+  var h = '<div class="ptitle">Lo que ocurre en la página</div><div class="browser"><div class="url">'+urlTxt+'</div><div class="viewport">';
+  if(S.pageUrl<2){
+    h += '<div class="blank">'+(S.pageUrl===1?"Cargando…":"Esperando…")+'</div>';
+  } else {
+    h += '<p class="bistro">Le Petit Bistro</p><p class="bsub">Table Reservations</p>';
+    for(var i=0;i<7;i++){
+      var f=FIELDS[i], v=S.vals[i];
+      var cls="box"+(v[1]?" ph":"")+(f.ta?" ta":"");
+      if(S.active===i && t>=T_FILL) cls+=" act";
+      if(S.validate) cls+=" good";
+      h += '<div class="fld"><label><span>'+esc(f.label)+'</span>'+(S.validate?'<span class="ok">✓</span>':'')+'</label>';
+      h += '<div class="'+cls+'">'+esc(v[0])+(v[2]?'<span class="caret"></span>':'')+'</div></div>';
+    }
+    h += '<div class="btn'+(S.press?' press':'')+'">Request Reservation</div>';
+    h += '<div class="chat" title="Chat">💬</div>';
+    if(S.dialog){
+      h += '<div class="modal"><div class="dlg"><h3>Reservation Received</h3><p>Bon Appétit!</p><span class="c">Close Window</span></div></div>';
+    }
+  }
+  h += '</div></div>';
+  var prevV = elPage.querySelector(".viewport");
+  var keep = prevV ? prevV.scrollTop : 0;
+  elPage.innerHTML = h;
+  var nv = elPage.querySelector(".viewport");
+  if(nv){
+    var a = nv.querySelector(".box.act");
+    if(a){ nv.scrollTop = Math.max(0, a.offsetTop - nv.clientHeight/2); } else { nv.scrollTop = keep; }
+  }
+}
+
+var lastKey = {a:"",d:"",p:"",c:""};
+function draw(force){
+  var S = stateAt(t);
+  var kA = JSON.stringify([S.ents,S.urlUsed,S.map,S.logN,S.final]);
+  var kD = JSON.stringify([S.dom,S.map,S.active,S.activeBtn,t<15?S.dom:0]);
+  var kP = JSON.stringify([S.pageUrl,S.vals,S.active,S.validate,S.press,S.dialog]);
+  if(force || kA!==lastKey.a){ lastKey.a=kA; renderAgent(S,t); }
+  if(force || kD!==lastKey.d){ lastKey.d=kD; renderDom(S,t); }
+  if(force || kP!==lastKey.p){ lastKey.p=kP; renderPage(S,t); }
+  var kC = S.scene;
+  if(force || kC!==lastKey.c){
+    lastKey.c=kC;
+    elCap.innerHTML = "<b>"+(S.scene+1)+". "+SCENES[S.scene].n+".</b> "+SCENES[S.scene].d;
+    SCENES.forEach(function(s,i){
+      var b=document.getElementById("st"+i);
+      b.className="step"+(i===S.scene?" on":(i<S.scene?" done":""));
+    });
+  }
+  if(!dragging) scrub.value = Math.round(t*100);
+  timeEl.textContent = fmt(t)+" / "+fmt(DUR);
+}
+
+var t=0, playing=true, speed=1, last=performance.now(), dragging=false;
+var playBtn=document.getElementById("play"),
+    scrub=document.getElementById("scrub"),
+    timeEl=document.getElementById("time"),
+    speedSel=document.getElementById("speed");
+
+function updBtn(){
+  playBtn.textContent = playing ? "Pausa" : (t>=DUR ? "Repetir" : "Reproducir");
+}
+playBtn.addEventListener("click",function(){
+  if(!playing && t>=DUR){ t=0; lastKey={a:"",d:"",p:"",c:""}; }
+  playing=!playing; last=performance.now(); updBtn();
+});
+speedSel.addEventListener("change",function(){ speed=parseFloat(speedSel.value); });
+scrub.addEventListener("input",function(){ dragging=true; t=scrub.value/100; draw(true); });
+scrub.addEventListener("change",function(){ dragging=false; });
+
+function frame(now){
+  var dt=(now-last)/1000; last=now;
+  if(playing){
+    t += Math.min(dt,0.1)*speed;
+    if(t>=DUR){ t=DUR; playing=false; updBtn(); }
+  }
+  draw(false);
+  requestAnimationFrame(frame);
+}
+updBtn();
+draw(true);
+requestAnimationFrame(function(n){ last=n; frame(n); });
+})();
+</script>
+</body>
+</html>

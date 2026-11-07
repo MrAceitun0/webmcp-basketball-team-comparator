@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Así usa un agente las herramientas WebMCP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --surface2:#e3eae6; --text:#14201c; --muted:#5b6b64; --line:#cbd6d1;
+  --green:#1f5d4a; --green-soft:#d3e8df; --brass:#9a6b12; --brass-soft:#f3e3bd;
+  --blue:#2a5f9e; --blue-soft:#dbe8f6; --ok:#237a4b; --ok-soft:#d6efe1;
+  --tag:#1f5d4a; --attr:#8a5a0b; --val:#2a5f9e;
+  --on-accent:#ffffff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1614; --surface:#15201d; --surface2:#1c2b27; --text:#e5ede9; --muted:#8fa39a; --line:#2a3b36;
+    --green:#5dc09a; --green-soft:#1d3a30; --brass:#e0aa48; --brass-soft:#3a2f14;
+    --blue:#7bb4ee; --blue-soft:#1b3047; --ok:#5dc99a; --ok-soft:#173a2a;
+    --tag:#5dc09a; --attr:#e0aa48; --val:#7bb4ee; --on-accent:#0e1614; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1614; --surface:#15201d; --surface2:#1c2b27; --text:#e5ede9; --muted:#8fa39a; --line:#2a3b36;
+  --green:#5dc09a; --green-soft:#1d3a30; --brass:#e0aa48; --brass-soft:#3a2f14;
+  --blue:#7bb4ee; --blue-soft:#1b3047; --ok:#5dc99a; --ok-soft:#173a2a;
+  --tag:#5dc09a; --attr:#e0aa48; --val:#7bb4ee; --on-accent:#0e1614; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 "Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 28px}
+h1{font:600 clamp(22px,3.2vw,32px)/1.15 "Fraunces",Georgia,"Times New Roman",serif;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 16px;max-width:72ch}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.step{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted);background:transparent;cursor:pointer;font-family:inherit}
+.step.on{background:var(--green);border-color:var(--green);color:var(--on-accent);font-weight:600}
+.step.done{color:var(--text);border-color:var(--green)}
+.caption{min-height:46px;margin:0 0 12px;font-size:15px}
+.stage{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;height:580px}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;min-height:0}
+.ptitle{font-weight:600;font-size:14px;margin-bottom:8px}
+.prompt{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45;margin-bottom:8px}
+.prompt b{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.chip{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:12px;background:var(--surface);transition:background .3s,border-color .3s}
+.chip i{font-style:normal;color:var(--muted);margin-right:5px}
+.chip.used{background:var(--green-soft);border-color:var(--green)}
+.log{flex:1;min-height:0;overflow:auto;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.ll{display:flex;gap:8px;margin-bottom:6px}
+.ll>span{flex:none;font:400 11px/1.9 "JetBrains Mono",ui-monospace,monospace;color:var(--muted);width:34px}
+.ll.dim{color:var(--muted)}
+code{font:500 12px "JetBrains Mono",ui-monospace,Menlo,monospace;background:var(--surface2);border-radius:4px;padding:1px 4px}
+.bubble{background:var(--ok-soft);border:1px solid var(--ok);border-radius:8px;padding:8px 10px;margin-top:6px}
+.stream{flex:1;min-height:0;overflow:auto}
+.card{border:1px solid var(--line);border-left-width:4px;border-radius:8px;padding:8px 10px;margin-bottom:10px}
+.card.page{border-left-color:var(--brass)}
+.card.out{border-left-color:var(--green)}
+.card.in{border-left-color:var(--blue)}
+.card h4{margin:0 0 6px;font-size:13px;font-weight:600}
+.card h4 small{font-weight:400;color:var(--muted);margin-left:6px}
+.code{font:400 12px/1.5 "JetBrains Mono",ui-monospace,Menlo,monospace;white-space:pre;overflow-x:auto}
+.code .l{display:block;padding:0 4px;border-radius:4px;border-left:3px solid transparent}
+.code .l.in{animation:flash .5s ease-out}
+.code .l.act{background:var(--brass-soft);border-left-color:var(--brass)}
+.code .l.hl{background:var(--brass-soft)}
+.tg{color:var(--tag)} .at{color:var(--attr)} .vl{color:var(--val)}
+@keyframes flash{from{background:var(--green-soft)}to{background:transparent}}
+.nt{font:400 12px/1.4 "Instrument Sans",system-ui,sans-serif;color:var(--text);background:var(--brass-soft);border-radius:5px;padding:4px 8px;margin:2px 0 5px 12px;white-space:normal}
+.browser{flex:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.url{background:var(--surface2);font:400 12px "JetBrains Mono",ui-monospace,monospace;padding:6px 10px;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewport{flex:1;position:relative;overflow:auto;padding:14px;background:#faf8f3;color:#2a2116}
+.blank{height:100%;display:grid;place-items:center;color:#8a8070;font-size:13px}
+.formwrap{border:2px solid transparent;border-radius:8px;padding:8px;margin:-8px;transition:border-color .25s,background .25s}
+.formwrap.tool{border-color:#9a6b12;background:rgba(154,107,18,.07)}
+.agentbadge{display:inline-block;background:#9a6b12;color:#fff;font-size:11px;border-radius:4px;padding:1px 7px;margin-bottom:6px}
+.bistro{font:600 20px/1.1 "Fraunces",Georgia,serif;margin:0}
+.bsub{font-size:12px;color:#7a6e5c;margin:2px 0 10px}
+.fld{margin-bottom:8px}
+.fld label{display:block;font-size:11.5px;color:#5a4e3c;margin-bottom:2px}
+.box{border:1px solid #cdc4b2;background:#fff;border-radius:5px;padding:5px 8px;font-size:13px;min-height:29px;color:#2a2116}
+.box.ph{color:#9c917e}
+.box.ta{min-height:46px}
+.box.fill{animation:fillflash .7s ease-out;border-color:#237a4b}
+@keyframes fillflash{from{background:#cfe9d9}to{background:#fff}}
+.btn{margin-top:6px;background:#1f5d4a;color:#fff;border-radius:5px;padding:7px 10px;text-align:center;font-size:13px;font-weight:600;transition:transform .15s,background .15s}
+.btn.press{transform:scale(.97);background:#b5832a;outline:3px solid rgba(154,107,18,.35)}
+.modal{position:absolute;inset:0;background:rgba(20,15,8,.55);display:grid;place-items:center;animation:fade .3s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.dlg{background:#fff;border-radius:8px;padding:16px 18px;text-align:center;max-width:220px}
+.dlg h3{margin:0 0 4px;font:600 16px "Fraunces",Georgia,serif;color:#1f5d4a}
+.dlg p{margin:0 0 10px;font-size:13px;color:#2a2116}
+.dlg .c{display:inline-block;background:#e8e2d3;border-radius:5px;padding:4px 10px;font-size:12px;color:#2a2116}
+.strip{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;opacity:0;transform:translateY(6px);transition:opacity .5s,transform .5s;pointer-events:none}
+.strip.on{opacity:1;transform:none}
+.cmp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.cmp b{font-weight:600}
+.cmp .sq{display:flex;gap:4px;margin:8px 0 2px;flex-wrap:wrap}
+.cmp .sq i{width:18px;height:18px;border-radius:4px;background:var(--surface2);border:1px solid var(--line)}
+.cmp.web .sq i{background:var(--green);border-color:var(--green)}
+.controls{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.controls button,.controls select{font:inherit;font-size:14px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.controls button.primary{background:var(--green);border-color:var(--green);color:var(--on-accent);font-weight:600;min-width:132px}
+.controls input[type=range]{flex:1;min-width:140px;accent-color:var(--green)}
+.time{font:400 12px "JetBrains Mono",ui-monospace,monospace;color:var(--muted);min-width:70px;text-align:right}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.foot{color:var(--muted);font-size:12.5px;margin-top:14px;max-width:84ch}
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr;height:auto}
+  .pane{height:440px}
+  .strip{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){.code .l.in,.modal,.box.fill{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Así usa un agente las herramientas WebMCP</h1>
+  <p class="sub">La misma reserva en Le Petit Bistro, pero ahora la página le dice al agente qué sabe hacer. Ya no hay que adivinar qué campo es cuál.</p>
+  <div class="steps" id="steps"></div>
+  <p class="caption" id="caption"></p>
+  <div class="stage">
+    <section class="pane" id="pAgent" aria-label="Agente"></section>
+    <section class="pane" id="pStream" aria-label="Mensajes entre agente y navegador"></section>
+    <section class="pane" id="pPage" aria-label="Página"></section>
+  </div>
+  <div class="strip" id="strip">
+    <div class="cmp"><b>Leyendo el DOM</b> (vídeo anterior)
+      <div class="sq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      1 lectura de la página + 7 campos + 1 clic = 9 acciones, todas deducidas por el agente.</div>
+    <div class="cmp web"><b>Con WebMCP</b>
+      <div class="sq" aria-hidden="true"><i></i><i></i></div>
+      1 descubrimiento + 1 llamada = 2 acciones, con el contrato de la página como guía.</div>
+  </div>
+  <div class="controls">
+    <button class="primary" id="play" type="button">Pausa</button>
+    <input id="scrub" type="range" min="0" max="5600" value="0" aria-label="Posición del vídeo">
+    <span class="time" id="time">0:00 / 0:56</span>
+    <select id="speed" aria-label="Velocidad">
+      <option value="1">1×</option>
+      <option value="1.5">1,5×</option>
+      <option value="2">2×</option>
+      <option value="0.5">0,5×</option>
+    </select>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var DUR = 56;
+var PROMPT = "Haz una reserva en http://127.0.0.1:8080/french-bistro/ para 3 personas a las 21:00 en la terraza a nombre de Sergi Pons con el tlf +34666666666, mi pareja tiene alergia a los cacahuetes para mañana";
+
+var SCENES = [
+  {t:0,    n:"Entender la petición", d:"Igual que antes, el modelo extrae de tu frase los datos que necesita."},
+  {t:7,    n:"La página declara la herramienta", d:"El desarrollador añade <b>toolname</b> y <b>tooldescription</b> a un formulario. El agente no lee este HTML: el navegador lo convierte en una herramienta."},
+  {t:15,   n:"Descubrir la herramienta", d:"El agente pregunta qué herramientas hay y recibe un <b>contrato</b>: nombre, descripción, campos, tipos y valores permitidos."},
+  {t:25,   n:"Construir los argumentos", d:"Con el contrato delante no hay que adivinar: cada dato se ajusta al tipo y a las opciones que la página acepta."},
+  {t:38.5, n:"Ejecutar", d:"Una sola llamada. El navegador rellena el formulario real, a la vista del usuario, y lo envía."},
+  {t:44.5, n:"Resultado", d:"La página devuelve el resultado y el agente se lo cuenta al usuario."}
+];
+
+var ENT = [
+  {k:"URL", v:"127.0.0.1:8080/french-bistro/"},
+  {k:"Nombre", v:"Sergi Pons"},
+  {k:"Teléfono", v:"+34666666666"},
+  {k:"Fecha", v:"«mañana» → 2026-11-07"},
+  {k:"Hora", v:"21:00"},
+  {k:"Personas", v:"3"},
+  {k:"Zona", v:"Terraza"},
+  {k:"Alergia", v:"cacahuetes"}
+];
+
+/* Contenido de la página (lo que se ve en el navegador) */
+var FIELDS = [
+  {label:"Full Name", show:"Sergi Pons", ph:""},
+  {label:"Phone Number", show:"+34666666666", ph:""},
+  {label:"Date", show:"2026-11-07", ph:"dd/mm/aaaa"},
+  {label:"Time", show:"21:00", ph:"--:--"},
+  {label:"Guests", show:"3 People", ph:"2 People"},
+  {label:"Seating Preference", show:"Terrace (Outdoor)", ph:"Main Dining Room"},
+  {label:"Special Requests", show:"Mi pareja tiene alergia a los cacahuetes", ph:"", ta:true}
+];
+
+/* Lo que escribe el desarrollador (abreviado) */
+function A(n,v){return '<span class="at">'+n+'</span>=<span class="vl">"'+v+'"</span>'}
+function IN(tag,name,req){return '  <span class="tg">&lt;'+tag+'</span> '+A("name",name)+(req?' <span class="at">required</span>':'')+'<span class="tg">&gt;</span>'}
+var HTML_LINES = [
+  {h:'<span class="tg">&lt;form</span> '+A("id","reservationForm")},
+  {h:'  <span class="at">toolname</span>=<span class="vl">"book_table_le_petit_bistro"</span>', hl:1},
+  {h:'  <span class="at">tooldescription</span>=<span class="vl">"Initiates a dining reservation…"</span><span class="tg">&gt;</span>', hl:1},
+  {h:IN("input","name",1)},
+  {h:IN("input","phone",1)},
+  {h:IN("input","date",1)},
+  {h:IN("input","time",1)},
+  {h:IN("select","guests",1)+'  <span class="rf">1 … 6</span>'},
+  {h:IN("select","seating",0)+'  Main Dining … Bar'},
+  {h:IN("textarea","requests",0)},
+  {h:'  <span class="tg">&lt;button&gt;</span>Request Reservation<span class="tg">&lt;/button&gt;</span>'},
+  {h:'<span class="tg">&lt;/form&gt;</span>'}
+];
+
+var SCHEMA = [
+  '{ "name": "book_table_le_petit_bistro",',
+  '  "description": "Initiates a dining reservation request…",',
+  '  "inputSchema": {',
+  '    "type": "object",',
+  '    "properties": {',
+  '      "name":     { "type": "string" },',
+  '      "phone":    { "type": "string" },',
+  '      "date":     { "type": "string" },',
+  '      "time":     { "type": "string" },',
+  '      "guests":   { "enum": ["1","2","3","4","5","6"] },',
+  '      "seating":  { "enum": ["Main Dining","Terrace","Private Booth","Bar"] },',
+  '      "requests": { "type": "string" }',
+  '    },',
+  '    "required": ["name","phone","date","time","guests"]',
+  '  } }'
+];
+var REQ_LINE = 12;
+
+var ARGS = [
+  {l:'  "name": "Sergi Pons",', n:"«A nombre de» → name."},
+  {l:'  "phone": "+34666666666",', n:"El ejemplo del esquema es un teléfono de EE. UU., pero es solo una pista: se envía el número tal cual."},
+  {l:'  "date": "2026-11-07",', n:"«Mañana» → hoy es 06/11/2026, así que 2026-11-07."},
+  {l:'  "time": "21:00",', n:"Hora en 24 h."},
+  {l:'  "guests": "3",', n:"El esquema pide texto de un enumerado: «3», no el número 3."},
+  {l:'  "seating": "Terrace",', n:"Se usa el valor permitido «Terrace», no el texto visible «Terrace (Outdoor)»."},
+  {l:'  "requests": "Mi pareja tiene alergia a los cacahuetes"', n:"La alergia no tiene campo propio: va en requests."}
+];
+
+/* Tiempos */
+var T_ENT=1.2, G_ENT=0.7;
+var T_HTML=8.0, G_HTML=0.45;
+var T_LIST=15.0;
+var T_SCH=16.2, T_SCHL=16.5, G_SCHL=0.4;
+var T_REQ=22.6;
+var T_EXEC_CARD=25.0, T_ARG=25.8, G_ARG=1.8, T_CLOSE=37.6;
+var T_EXEC=38.5, T_FILL=38.7, G_FILL=0.45;
+var T_PRESS=42.0, T_DLG=43.4, T_RES=44.5, T_STRIP=47, T_END=50;
+
+var LOG = [
+  [0.4, "Recibo la instrucción y la estructuro."],
+  [6.3, "Tengo la URL y 7 datos. Antes de tocar nada, miro qué ofrece la página."],
+  [7.2, "<code>navigate</code> a la URL indicada."],
+  [8.2, "El navegador detecta <code>&lt;form toolname&gt;</code> y lo registra como herramienta.", "dim"],
+  [13.2, "El esquema se genera a partir de los campos del propio formulario.", "dim"],
+  [15.1, "<code>list_tools</code>: ¿qué sabe hacer esta página?"],
+  [22.6, "Una sola herramienta y su descripción encaja con «hacer una reserva»."],
+  [23.6, "Obligatorios: name, phone, date, time y guests."],
+  [24.6, "Construyo los argumentos respetando tipos y enumerados."],
+  [38.6, "<code>execute_tool</code>: una única llamada con todos los argumentos."],
+  [39.2, "El navegador rellena el formulario real, a la vista del usuario.", "dim"],
+  [42.1, "Se envía el formulario como una petición del agente (<code>agentInvoked</code>); la página decide la respuesta.", "dim"],
+  [44.7, "Recibo el resultado: reserva recibida."],
+  [47.5, "En total, 2 llamadas: descubrir y ejecutar."],
+  [50.2, "Preparo la respuesta para el usuario."]
+];
+ARGS.forEach(function(a,i){ LOG.push([T_ARG+i*G_ARG+0.1, a.n]); });
+LOG.sort(function(a,b){return a[0]-b[0]});
+
+var FINAL_MSG = "Hecho. He solicitado la reserva en Le Petit Bistro: 3 personas, mañana (07/11/2026) a las 21:00, en la terraza, a nombre de Sergi Pons (+34666666666). He anotado en las peticiones especiales la alergia a los cacahuetes de tu pareja.";
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function fmt(t){var s=Math.floor(t);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+function colorJson(s){
+  return esc(s).replace(/"([^"]*)"(\s*:)?/g,function(m,a,b){
+    return b ? '<span class="at">"'+a+'"</span>'+b : '<span class="vl">"'+a+'"</span>';
+  });
+}
+
+function stateAt(t){
+  var S={};
+  S.ents = clamp(Math.floor((t-T_ENT)/G_ENT)+1,0,ENT.length);
+  S.urlUsed = t>=7.2;
+  S.pageUrl = t<7.2 ? 0 : (t<7.6 ? 1 : 2);
+  S.html = clamp(Math.floor((t-T_HTML)/G_HTML)+1,0,HTML_LINES.length);
+  S.list = t>=T_LIST;
+  S.schCard = t>=T_SCH;
+  S.sch = t<T_SCHL ? 0 : clamp(Math.floor((t-T_SCHL)/G_SCHL)+1,0,SCHEMA.length);
+  S.req = t>=T_REQ;
+  S.execCard = t>=T_EXEC_CARD;
+  S.args = t<T_ARG ? 0 : clamp(Math.floor((t-T_ARG)/G_ARG)+1,0,ARGS.length);
+  S.close = t>=T_CLOSE;
+  S.activeArg = (t>=T_ARG && t<T_EXEC) ? S.args-1 : -1;
+  S.fill = [];
+  for(var i=0;i<7;i++) S.fill.push(t>=T_FILL+i*G_FILL ? 1 : 0);
+  S.formActive = t>=T_EXEC && t<T_RES;
+  S.press = t>=T_PRESS && t<T_DLG;
+  S.dialog = t>=T_DLG;
+  S.result = t>=T_RES;
+  S.strip = t>=T_STRIP;
+  S.final = t>=T_END;
+  S.logN = LOG.filter(function(l){return l[0]<=t}).length;
+  var sc=0; SCENES.forEach(function(s,i){ if(t>=s.t) sc=i; });
+  S.scene=sc;
+  return S;
+}
+
+var elAgent=document.getElementById("pAgent"),
+    elStream=document.getElementById("pStream"),
+    elPage=document.getElementById("pPage"),
+    elCap=document.getElementById("caption"),
+    elSteps=document.getElementById("steps"),
+    elStrip=document.getElementById("strip");
+
+SCENES.forEach(function(s,i){
+  var b=document.createElement("button");
+  b.type="button"; b.className="step"; b.id="st"+i; b.textContent=(i+1)+". "+s.n;
+  b.addEventListener("click",function(){ t=s.t+0.01; playing=false; updBtn(); draw(true); });
+  elSteps.appendChild(b);
+});
+
+function renderAgent(S){
+  var h='<div class="ptitle">Agente</div>';
+  h+='<div class="prompt"><b>Tu instrucción</b>'+esc(PROMPT)+'</div>';
+  if(S.ents){
+    h+='<div class="chips">';
+    for(var i=0;i<S.ents;i++){
+      var used = i===0 ? S.urlUsed : S.args>=i;
+      h+='<span class="chip'+(used?' used':'')+'"><i>'+ENT[i].k+'</i>'+esc(ENT[i].v)+'</span>';
+    }
+    h+='</div>';
+  }
+  h+='<div class="log" id="log">';
+  for(var j=0;j<S.logN;j++){
+    var l=LOG[j];
+    h+='<div class="ll'+(l[2]?' '+l[2]:'')+'"><span>'+fmt(l[0])+'</span><div>'+l[1]+'</div></div>';
+  }
+  if(S.final) h+='<div class="bubble">'+esc(FINAL_MSG)+'</div>';
+  h+='</div>';
+  elAgent.innerHTML=h;
+  var lg=document.getElementById("log"); if(lg) lg.scrollTop=lg.scrollHeight;
+}
+
+function renderStream(S,t){
+  var h='<div class="ptitle">Lo que se intercambian</div><div class="stream" id="stream">';
+  if(S.html){
+    h+='<div class="card page"><h4>Página → navegador<small>HTML que escribe el desarrollador</small></h4><div class="code">';
+    for(var i=0;i<S.html;i++){
+      var L=HTML_LINES[i];
+      h+='<span class="l'+(L.hl?' hl':'')+((i===S.html-1&&t<T_LIST-1)?' in':'')+'">'+L.h+'</span>';
+    }
+    h+='</div></div>';
+  }
+  if(S.list){
+    h+='<div class="card out"><h4>Agente → navegador<small>1.ª llamada</small></h4><div class="code"><span class="l">'+colorJson('list_tools()')+'</span></div></div>';
+  }
+  if(S.schCard){
+    h+='<div class="card in"><h4>Navegador → agente<small>1 herramienta registrada</small></h4><div class="code">';
+    for(var k=0;k<S.sch;k++){
+      var cls='l'+((k===S.sch-1&&t<T_REQ-0.5)?' in':'')+((S.req&&k===REQ_LINE)?' hl':'');
+      h+='<span class="'+cls+'">'+colorJson(SCHEMA[k])+'</span>';
+    }
+    h+='</div></div>';
+  }
+  if(S.execCard){
+    h+='<div class="card out"><h4>Agente → navegador<small>2.ª llamada</small></h4><div class="code">';
+    h+='<span class="l">execute_tool("book_table_le_petit_bistro", {</span>';
+    var notes='';
+    for(var a=0;a<S.args;a++){
+      var act = S.activeArg===a;
+      h+='<span class="l'+(act?' act':'')+'">'+colorJson(ARGS[a].l)+'</span>';
+      if(act){ h+='</div><div class="nt">'+esc(ARGS[a].n)+'</div><div class="code">'; }
+    }
+    if(S.close) h+='<span class="l">})</span>';
+    h+='</div></div>';
+  }
+  if(S.result){
+    h+='<div class="card in"><h4>Navegador → agente<small>resultado (ilustrativo)</small></h4><div class="code"><span class="l">'+colorJson('{ "content": [{ "type": "text",')+'</span><span class="l">'+colorJson('    "text": "Reservation received." }] }')+'</span></div></div>';
+  }
+  h+='</div>';
+  elStream.innerHTML=h;
+  var st=document.getElementById("stream"); if(st) st.scrollTop=st.scrollHeight;
+}
+
+function renderPage(S){
+  var urlTxt = S.pageUrl===0 ? "about:blank" : "127.0.0.1:8080/french-bistro/";
+  var h='<div class="ptitle">Lo que ocurre en la página</div><div class="browser"><div class="url">'+urlTxt+'</div><div class="viewport">';
+  if(S.pageUrl<2){
+    h+='<div class="blank">'+(S.pageUrl===1?"Cargando…":"Esperando…")+'</div>';
+  } else {
+    h+='<div class="formwrap'+(S.formActive?' tool':'')+'">';
+    if(S.formActive) h+='<span class="agentbadge">Un agente está usando este formulario</span>';
+    h+='<p class="bistro">Le Petit Bistro</p><p class="bsub">Table Reservations</p>';
+    for(var i=0;i<7;i++){
+      var f=FIELDS[i], filled=S.fill[i];
+      var cls='box'+(filled?'':' ph')+(f.ta?' ta':'')+((filled&&S.formActive&&fillRecent(i))?' fill':'');
+      h+='<div class="fld"><label>'+esc(f.label)+'</label><div class="'+cls+'">'+esc(filled?f.show:f.ph)+'</div></div>';
+    }
+    h+='<div class="btn'+(S.press?' press':'')+'">Request Reservation</div></div>';
+    if(S.dialog) h+='<div class="modal"><div class="dlg"><h3>Reservation Received</h3><p>Bon Appétit!</p><span class="c">Close Window</span></div></div>';
+  }
+  h+='</div></div>';
+  elPage.innerHTML=h;
+}
+var curT=0;
+function fillRecent(i){ var s=T_FILL+i*G_FILL; return curT-s<0.7; }
+
+var lastKey={a:"",s:"",p:"",c:""};
+function draw(force){
+  curT=t;
+  var S=stateAt(t);
+  var kA=JSON.stringify([S.ents,S.urlUsed,S.args,S.logN,S.final]);
+  var kS=JSON.stringify([S.html,S.list,S.schCard,S.sch,S.req,S.execCard,S.args,S.close,S.activeArg,S.result]);
+  var recent=[]; for(var i=0;i<7;i++) recent.push(S.fill[i]&&S.formActive&&(t-(T_FILL+i*G_FILL)<0.7)?1:0);
+  var kP=JSON.stringify([S.pageUrl,S.fill,recent,S.formActive,S.press,S.dialog]);
+  if(force||kA!==lastKey.a){lastKey.a=kA;renderAgent(S);}
+  if(force||kS!==lastKey.s){lastKey.s=kS;renderStream(S,t);}
+  if(force||kP!==lastKey.p){lastKey.p=kP;renderPage(S);}
+  if(force||S.scene!==lastKey.c){
+    lastKey.c=S.scene;
+    elCap.innerHTML="<b>"+(S.scene+1)+". "+SCENES[S.scene].n+".</b> "+SCENES[S.scene].d;
+    SCENES.forEach(function(s,i){
+      document.getElementById("st"+i).className="step"+(i===S.scene?" on":(i<S.scene?" done":""));
+    });
+  }
+  elStrip.className="strip"+(S.strip?" on":"");
+  if(!dragging) scrub.value=Math.round(t*100);
+  timeEl.textContent=fmt(t)+" / "+fmt(DUR);
+}
+
+var t=0, playing=true, speed=1, last=performance.now(), dragging=false;
+var playBtn=document.getElementById("play"),
+    scrub=document.getElementById("scrub"),
+    timeEl=document.getElementById("time"),
+    speedSel=document.getElementById("speed");
+
+function updBtn(){ playBtn.textContent = playing ? "Pausa" : (t>=DUR ? "Repetir" : "Reproducir"); }
+playBtn.addEventListener("click",function(){
+  if(!playing && t>=DUR){ t=0; lastKey={a:"",s:"",p:"",c:""}; }
+  playing=!playing; last=performance.now(); updBtn();
+});
+speedSel.addEventListener("change",function(){ speed=parseFloat(speedSel.value); });
+scrub.addEventListener("input",function(){ dragging=true; t=scrub.value/100; draw(true); });
+scrub.addEventListener("change",function(){ dragging=false; });
+
+function frame(now){
+  var dt=(now-last)/1000; last=now;
+  if(playing){
+    t+=Math.min(dt,0.1)*speed;
+    if(t>=DUR){ t=DUR; playing=false; updBtn(); }
+  }
+  draw(false);
+  requestAnimationFrame(frame);
+}
+updBtn();
+draw(true);
+requestAnimationFrame(function(n){ last=n; frame(n); });
+})();
+</script>
+</body>
+</html>

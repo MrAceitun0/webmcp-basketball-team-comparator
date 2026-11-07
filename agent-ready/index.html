@@ -23,23 +23,58 @@
 
   <section class="tarjeta" aria-labelledby="titulo-equipos">
     <h2 id="titulo-equipos">1. Elige los dos equipos a comparar</h2>
-    <form id="form-equipos" 
-      toolname="seleccionar-equipos"
-      tooldescription="Selecciona dos equipos para comparar sus estadisticas"
-      toolautosubmit="true"
-      >
+    <form id="form-equipos"
+          toolname="seleccionar-equipos"
+          tooldescription="Selecciona los dos equipos de Primera FEB a comparar y muestra su comparativa, duelos por posición y tabla de jugadores. Códigos de equipo: OCB = Alimerka Oviedo Baloncesto, MON = Baloncesto Fuenlabrada, MEN = Bàsquet Menorca, ALB = Buenos Arenas Albacete Basket, CAJA = Caja 87, GRA = CB Granada, OUR = Club Ourense Baloncesto, CCC = Coto Córdoba CB, GCN = Dreamland Gran Canaria, PAE = FIBWI Palma, GBC = Gipuzkoa Basket, ICE = Grupo Alega Cantabria Estela, TIZ = Grupo Ureta Tizona Burgos, LUC = HLA Alicante, EST = Movistar Estudiantes, PAL = Palencia Baloncesto, PBM = Palma Bàsquet Mallorca, AQU = Zamora Enamora."
+          toolautosubmit>
       <label>Equipo A (nosotros / local)
-        <select id="sel-equipo-a" 
-          name="equipoA" 
-          required
-          toolparamdescription="Equipo local para comparar"
-        ></select>
+        <select id="sel-equipo-a" name="equipoA" required
+                toolparamdescription="equipo local a comparar">
+          <option value="">— Selecciona equipo —</option>
+          <option value="OCB">Alimerka Oviedo Baloncesto (OCB)</option>
+          <option value="MON">Baloncesto Fuenlabrada (MON)</option>
+          <option value="MEN">Bàsquet Menorca (MEN)</option>
+          <option value="ALB">Buenos Arenas Albacete Basket (ALB)</option>
+          <option value="CAJA">Caja 87 (CAJA)</option>
+          <option value="GRA">CB Granada (GRA)</option>
+          <option value="OUR">Club Ourense Baloncesto (OUR)</option>
+          <option value="CCC">Coto Córdoba CB (CCC)</option>
+          <option value="GCN">Dreamland Gran Canaria (GCN)</option>
+          <option value="PAE">FIBWI Palma (PAE)</option>
+          <option value="GBC">Gipuzkoa Basket (GBC)</option>
+          <option value="ICE">Grupo Alega Cantabria Estela (ICE)</option>
+          <option value="TIZ">Grupo Ureta Tizona Burgos (TIZ)</option>
+          <option value="LUC">HLA Alicante (LUC)</option>
+          <option value="EST">Movistar Estudiantes (EST)</option>
+          <option value="PAL">Palencia Baloncesto (PAL)</option>
+          <option value="PBM">Palma Bàsquet Mallorca (PBM)</option>
+          <option value="AQU">Zamora Enamora (AQU)</option>
+        </select>
       </label>
       <span class="vs" aria-hidden="true">VS</span>
       <label>Equipo B (rival)
         <select id="sel-equipo-b" name="equipoB" required
-          toolparamdescription="Equipo visitante para comparar"
-        ></select>
+                toolparamdescription="equipo visitante a comparar">
+          <option value="">— Selecciona equipo —</option>
+          <option value="OCB">Alimerka Oviedo Baloncesto (OCB)</option>
+          <option value="MON">Baloncesto Fuenlabrada (MON)</option>
+          <option value="MEN">Bàsquet Menorca (MEN)</option>
+          <option value="ALB">Buenos Arenas Albacete Basket (ALB)</option>
+          <option value="CAJA">Caja 87 (CAJA)</option>
+          <option value="GRA">CB Granada (GRA)</option>
+          <option value="OUR">Club Ourense Baloncesto (OUR)</option>
+          <option value="CCC">Coto Córdoba CB (CCC)</option>
+          <option value="GCN">Dreamland Gran Canaria (GCN)</option>
+          <option value="PAE">FIBWI Palma (PAE)</option>
+          <option value="GBC">Gipuzkoa Basket (GBC)</option>
+          <option value="ICE">Grupo Alega Cantabria Estela (ICE)</option>
+          <option value="TIZ">Grupo Ureta Tizona Burgos (TIZ)</option>
+          <option value="LUC">HLA Alicante (LUC)</option>
+          <option value="EST">Movistar Estudiantes (EST)</option>
+          <option value="PAL">Palencia Baloncesto (PAL)</option>
+          <option value="PBM">Palma Bàsquet Mallorca (PBM)</option>
+          <option value="AQU">Zamora Enamora (AQU)</option>
+        </select>
       </label>
       <button type="submit" class="primario">Comparar</button>
     </form>
@@ -65,7 +100,7 @@
   <section class="tarjeta" id="seccion-jugadores" aria-labelledby="titulo-jugadores" hidden>
     <h2 id="titulo-jugadores">4. Jugadores</h2>
 
-    <form id="form-filtros">
+    <div id="filtros">
       <fieldset>
         <legend>Posición</legend>
         <div class="segmentado" id="botones-posicion" data-control="posicion"></div>
@@ -80,10 +115,39 @@
         </div>
       </fieldset>
 
-      <label>
-        <span>Ordenar por</span>
-        <select id="sel-orden" name="metrica" data-control="orden"></select>
-      </label>
+      <form id="form-orden"
+            toolname="ordenar-por-estadistica"
+            tooldescription="Ordena la tabla de jugadores por una estadística y devuelve los 5 primeros. Requiere haber seleccionado equipos con seleccionar-equipos."
+            toolautosubmit>
+        <label>
+          <span>Ordenar por</span>
+          <select id="sel-orden" name="metrica" data-control="orden"
+                  toolparamdescription="Estadística por la que ordenar: pj = partidos jugados, min = minutos, pts = puntos, reb = rebotes, ast = asistencias, t3pct = % triples, t3m = triples anotados, rob = robos, tap = tapones, tov = pérdidas, per = PER, maxPts = máxima anotación. Vacío restaura el orden original.">
+            <option value="">Original (equipo, puntos)</option>
+            <option value="pj">Partidos jugados</option>
+            <option value="min">Minutos</option>
+            <option value="pts">Puntos</option>
+            <option value="reb">Rebotes</option>
+            <option value="ast">Asistencias</option>
+            <option value="t3pct">% Triples</option>
+            <option value="t3m">Triples anotados</option>
+            <option value="rob">Robos</option>
+            <option value="tap">Tapones</option>
+            <option value="tov">Pérdidas</option>
+            <option value="per">PER</option>
+            <option value="maxPts">Máx. anotación</option>
+          </select>
+        </label>
+        <label>
+          <span>Dirección</span>
+          <select id="sel-direccion" name="direccion" data-control="direccion"
+                  toolparamdescription="desc = mayor a menor, asc = menor a mayor">
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
+        <button type="submit">Ordenar</button>
+      </form>
 
       <label>
         <span>Resaltar jugador</span>
@@ -93,7 +157,7 @@
       </label>
 
       <button type="button" id="btn-limpiar">Limpiar filtros</button>
-    </form>
+    </div>
 
     <p class="estado" id="estado" role="status" aria-live="polite"></p>
 

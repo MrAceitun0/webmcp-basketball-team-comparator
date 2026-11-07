@@ -35,11 +35,65 @@ npx http-server --port=8080 -c-1
 > [!TIP]
 > * **Gemini API Key:** Si usas una API Key gratuita, Google podría limitarte los usos, esperate un minuto para volver a usarla. Si usas una API Key de pago, podrás hacer llamadas ilimitadas.
 
+## Demos previas
+### Le Petit Bistro - Reserva en tu restaurante favorito (imperative)
+[Demo]()
+[Repositorio]()
+
+### zaMaker! - Haz tu propia pizza con WebMCP (declarative)
+[Demo]()
+[Repositorio]()
+
+### Proxx - Hasta el buscaminas es agent-ready (declarative)
+[Demo]()
+[Repositorio]()
+
+
 ## Declarative WebMCP
 
+**Elegir equipos.**
+En [`start/index.html`](start/index.html) añade al formulario `#form-equipos`:
+   ```html
+   <form id="form-equipos"
+         toolname="seleccionar-equipos"
+         tooldescription="Selecciona los dos equipos de Primera FEB a comparar..."
+         toolautosubmit>
+     <select id="sel-equipo-a" name="equipoA" required
+             toolparamdescription="Código del equipo A (nuestro equipo o local), p. ej. OUR"></select>
+     ...
+   ```
+   * `toolname` / `tooldescription`: nombre y descripción de la herramienta.
+   * `name` + `toolparamdescription`: cada campo es un parámetro del esquema.
+   * `toolautosubmit`: true/false el agente envía el formulario sin esperar a que el usuario pulse el botón.
+  
+
+[!TIP]
+> * **¿Ya ves tu herramienta en la extensión de WebMCP?** Implementa el filtro por estadísticas con programación declarativa
 
 ## Imperative WebMCP
 
+1. **Detecta la API** y regístrala al cargar la página:
+   ```js
+   const contexto = document.modelContext ?? navigator.modelContext;
+   if (!contexto) return;
+   ```
+2. **Registra una herramienta por intención** con `registerTool`. El esquema se construye a partir de las constantes de la app (`POSICIONES`) para que no se desincronice, y `execute` reutiliza las funciones que ya usa la UI:
+   ```js
+   await contexto.registerTool({
+     name: "filtrar-por-posicion",
+     description: "Muestra solo los jugadores de una posición... Requiere haber seleccionado equipos con seleccionar-equipos.",
+     inputSchema: {
+       type: "object",
+       properties: {
+         posicion: { type: "string", enum: ["todas", "PG", "SG", "SF", "PF", "C"] }
+       },
+       required: ["posicion"]
+     },
+     execute: async ({ posicion }) => window.filtrarPorPosicion(posicion)
+   });
+   ```
+3. Repite para `filtrar-por-equipo` (`enum: ["ambos", "A", "B"]`), `resaltar-jugador` (`nombre: string`) y `limpiar-filtros` (sin parámetros).
+4. **Comprueba** con WebMCP Model Context Tools Inspector que aparecen 6 herramientas y pide a Gemini, por ejemplo: *"Compara Ourense con Estudiantes, solo pívots, ordenados por PER de menor a mayor"*.
 
 ## Lighthouse Evaluation
 Si tienes tu servidor local, puedes evaluar tus cambios.

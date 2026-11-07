@@ -176,6 +176,7 @@ function sincronizarEstado() {
   document.querySelectorAll("#botones-vista button").forEach((b) =>
     b.setAttribute("aria-pressed", String(b.dataset.valor === ESTADO.vista)));
   $("#sel-orden").value = ESTADO.orden || "";
+  $("#sel-direccion").value = ESTADO.direccion;
 
   document.querySelectorAll("#fila-cabecera th[data-metrica]").forEach((th) => {
     if (th.dataset.metrica === ESTADO.orden) th.setAttribute("aria-sort", ESTADO.direccion === "asc" ? "ascending" : "descending");
@@ -194,23 +195,12 @@ function nombresVisibles() {
   return [...cuerpoTabla.rows].filter((tr) => !tr.hidden).map((tr) => tr.dataset.jugador);
 }
 
-function rellenarSelectoresEquipo() {
-  const codigos = Object.keys(PARTIDOS_EQUIPO).sort((a, b) => nombreEquipo(a).localeCompare(nombreEquipo(b), "es"));
-  for (const sel of [$("#sel-equipo-a"), $("#sel-equipo-b")]) {
-    sel.innerHTML = '<option value="">— Selecciona equipo —</option>' +
-      codigos.map((c) => `<option value="${c}" data-codigo="${c}">${escaparHTML(nombreEquipo(c))} (${c})</option>`).join("");
-  }
-}
-
 function crearControles() {
   const cont = $("#botones-posicion");
   const opciones = [{ codigo: "todas", nombre: "Todas" }, ...POSICIONES.filter((p) => p.codigo !== "N/D")];
   cont.innerHTML = opciones
     .map((p) => `<button type="button" data-valor="${p.codigo}" aria-pressed="${p.codigo === "todas"}">${p.nombre}</button>`)
     .join("");
-
-  $("#sel-orden").innerHTML = '<option value="">Original (equipo, puntos)</option>' +
-    COLUMNAS_TABLA.map((c) => `<option value="${c}">${metrica(c).etiqueta}</option>`).join("");
 
   $("#fila-cabecera").innerHTML =
     '<th scope="col">Jugador</th><th scope="col">Equipo</th><th scope="col">Pos.</th>' +
@@ -508,14 +498,31 @@ $("#form-equipos").addEventListener("submit", (e) => {
   e.preventDefault();
   const a = $("#sel-equipo-a").value;
   const b = $("#sel-equipo-b").value;
-  const resultado = !a || !b
-    ? { ok: false, mensaje: "Selecciona los dos equipos." }
-    : window.seleccionarEquipos(a, b);
-  if (!resultado.ok) $("#error-equipos").textContent = resultado.mensaje;
-  if (e.agentInvoked) e.respondWith(Promise.resolve(resultado));
+  const resultado = datosListos
+    .then(() => !a || !b
+      ? { ok: false, mensaje: "Selecciona los dos equipos." }
+      : window.seleccionarEquipos(a, b))
+    .catch(() => ({ ok: false, mensaje: "No se pudieron cargar los datos de jugadores." }));
+  resultado.then((r) => { if (!r.ok) $("#error-equipos").textContent = r.mensaje; });
+  if (e.agentInvoked) e.respondWith(resultado);
 });
 
-$("#form-filtros").addEventListener("submit", (e) => e.preventDefault());
+$("#form-orden").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const metricaPedida = $("#sel-orden").value;
+  const direccion = $("#sel-direccion").value;
+  let resultado;
+  if (!equiposSeleccionados()) resultado = faltanEquipos();
+  else if (metricaPedida) resultado = window.ordenarPorEstadistica(metricaPedida, direccion);
+  else {
+    filasOriginales.forEach((tr) => cuerpoTabla.appendChild(tr));
+    ESTADO.orden = null;
+    ESTADO.direccion = direccion;
+    sincronizarEstado();
+    resultado = { ok: true, mensaje: "Orden original restaurado.", visibles: nombresVisibles() };
+  }
+  if (e.agentInvoked) e.respondWith(Promise.resolve(resultado));
+});
 
 $("#botones-posicion").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-valor]");
@@ -527,14 +534,9 @@ $("#botones-vista").addEventListener("click", (e) => {
   if (b) window.filtrarPorEquipo(b.dataset.valor);
 });
 
-$("#sel-orden").addEventListener("change", (e) => {
-  if (e.target.value) window.ordenarPorEstadistica(e.target.value, "desc");
-  else {
-    filasOriginales.forEach((tr) => cuerpoTabla.appendChild(tr));
-    ESTADO.orden = null;
-    sincronizarEstado();
-  }
-});
+for (const sel of ["#sel-orden", "#sel-direccion"]) {
+  $(sel).addEventListener("change", () => $("#form-orden").requestSubmit());
+}
 
 $("#fila-cabecera").addEventListener("click", (e) => {
   const th = e.target.closest("th[data-metrica]");
@@ -548,9 +550,82 @@ $("#input-resaltar").addEventListener("search", (e) => { if (!e.target.value) wi
 
 $("#btn-limpiar").addEventListener("click", () => window.limpiarFiltros());
 
+/* WebMCP Tool Registration - Imperative Approach */
+async function registrarHerramientasWebMCP() {
+  const contexto = document.modelContext ?? navigator.modelContext;
+  if (!contexto) return;
+
+  const requiereEquipos = "Requiere haber seleccionado equipos con seleccionar-equipos.";
+  const posiciones = POSICIONES.filter((p) => p.codigo !== "N/D");
+  const herramientas = [
+    /*{ 
+      name: '',
+      description: '',
+      inputSchema: {
+        type: "object",
+        properties: {
+          posicion: {
+            type: "string",
+            enum: ["todas", ...posiciones.map((p) => p.codigo)],
+            description: `${posiciones.map((p) => `${p.codigo} = ${p.nombre}`).join(", ")}, todas = sin filtro.`
+          }
+        },
+        required: ["posicion"]
+      },
+      execute: async ({ posicion }) => window.filtrarPorPosicion(posicion)
+    },*/
+    /*{
+      name: '',
+      description: '',
+      inputSchema: {
+        type: "object",
+        properties: {
+          equipo: {
+            type: "string",
+            enum: ["ambos", "A", "B"],
+            description: "A = equipo A (nuestro), B = equipo B (rival), ambos = sin filtro."
+          }
+        },
+        required: ["equipo"]
+      },
+      execute: async ({ equipo }) => window.filtrarPorEquipo(equipo)
+    },*/
+    /*{
+      name: '',
+      description: '',
+      inputSchema: {
+        type: "object",
+        properties: {
+          nombre: {
+            type: "string",
+            description: "Nombre completo o parcial del jugador. Una cadena vacía quita el resaltado."
+          }
+        },
+        required: ["nombre"]
+      },
+      execute: async ({ nombre }) => window.resaltarJugador(nombre)
+    },*/
+    /*{
+      name: '',
+      description: '',
+      inputSchema: { type: "object", properties: {} },
+      execute: async () => window.limpiarFiltros()
+    }*/
+  ];
+  
+  for (const herramienta of herramientas) {
+    try {
+      await contexto.registerTool(herramienta);
+    } catch (err) {
+      console.warn(`No se pudo registrar la herramienta ${herramienta.name}:`, err);
+    }
+  }
+}
+
 crearControles();
-cargarJugadores()
-  .then(rellenarSelectoresEquipo)
+registrarHerramientasWebMCP();
+const datosListos = cargarJugadores();
+datosListos
   .catch((e) => {
     console.error("No se pudieron leer los datos de jugadores:", e);
     $("#error-equipos").textContent = "No se pudieron cargar los datos de jugadores.";
