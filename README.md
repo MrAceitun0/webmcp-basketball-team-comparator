@@ -37,16 +37,19 @@ npx http-server --port=8080 -c-1
 
 ## Demos previas
 ### Le Petit Bistro - Reserva en tu restaurante favorito (imperative)
-[Demo]()
-[Repositorio]()
+[Demo](https://googlechromelabs.github.io/webmcp-tools/demos/french-bistro/)
+
+[Repositorio](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/french-bistro)
 
 ### zaMaker! - Haz tu propia pizza con WebMCP (declarative)
-[Demo]()
-[Repositorio]()
+[Demo](https://googlechromelabs.github.io/webmcp-tools/demos/pizza-maker/)
+
+[Repositorio](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/pizza-maker)
 
 ### Proxx - Hasta el buscaminas es agent-ready (declarative)
-[Demo]()
-[Repositorio]()
+[Demo](https://googlechromelabs.github.io/webmcp-tools/demos/proxx-lite/)
+
+[Repositorio](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/proxx-lite)
 
 
 ## Declarative WebMCP
@@ -67,7 +70,7 @@ En [`start/index.html`](start/index.html) añade al formulario `#form-equipos`:
    * `toolautosubmit`: true/false el agente envía el formulario sin esperar a que el usuario pulse el botón.
   
 
-[!TIP]
+> [!TIP]
 > * **¿Ya ves tu herramienta en la extensión de WebMCP?** Implementa el filtro por estadísticas con programación declarativa
 
 ## Imperative WebMCP
@@ -111,3 +114,10 @@ De no ser así puedes usar las versión inicial y la final en estos links:
     * Navigation
     * Desktop
     * Agentic Browsing
+
+## Recursos Extra
+* [Collection of WebMCP Tools](https://github.com/GoogleChromeLabs/webmcp-tools)
+* [Website explaining how WebMCP Tools work](https://googlechromelabs.github.io/webmcp-tools/demos/explainer/)
+* [Le French Bistro Repository](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/french-bistro)
+* [Pizza Maker!](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/pizza-maker)
+* [Proxx Game - Minesweeper](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos/proxx-lite)
