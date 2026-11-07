@@ -5,7 +5,7 @@ En este taller práctico vamos a desarrollar una aplicación que esté lista par
 
 Creado por: [Sergi Olives](https://www.linkedin.com/in/sergiolives/)
 
-[Google Slides](https://docs.google.com/presentation/d/1Ul1tQYMZodUqa-noJB60eDFFNd6UaU45ygP9c6SmAos/edit?usp=sharing)
+[Google Slides](https://docs.google.com/presentation/d/1_hfSLmokd8vSZfXU8BTfPn1qBoyGoG0WuBFW4zgo6Ww/edit?usp=sharing)
 
 ## 🛠️ Set-up
 1. **Descarga este repositorio:** vamos a trabajar con la carpeta **start** - recomiendo hacer un **fork** del repositorio si tienes github
